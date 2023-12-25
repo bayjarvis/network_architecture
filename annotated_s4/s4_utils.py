@@ -1,10 +1,20 @@
 # s4_utils.py
 import jax
 import jax.numpy as np
+from flax import linen as nn
 from jax.numpy.linalg import eigh, inv, matrix_power
 from annotated_s4.ssm_utils import random_SSM, discretize, scan_SSM, run_SSM
 from annotated_s4.rnn_to_cnn import causal_convolution, K_conv, log_step_initializer
 from annotated_s4.hippo_matrix import make_HiPPO
+
+def cloneLayer(layer):
+    return nn.vmap(
+        layer,
+        in_axes=1,
+        out_axes=1,
+        variable_axes={"params": 1, "cache": 1, "prime": 1},
+        split_rngs={"params": True},
+    )
 
 ## Part 2: implementing S4
 
@@ -175,6 +185,7 @@ def hippo_initializer(N):
 
 def sample(model, params, prime, cache, x, start, end, rng):
     def loop(i, cur):
+        print('loop', 'i', i, 'cur', cur)
         x, rng, cache = cur
         r, rng = jax.random.split(rng)
         out, vars = model.apply(
@@ -184,20 +195,32 @@ def sample(model, params, prime, cache, x, start, end, rng):
         )
 
         def update(x, out):
+            print('update', x.shape, out.shape)
             p = jax.random.categorical(r, out[0])
             x = x.at[i + 1, 0].set(p)
             return x
 
         x = jax.vmap(update)(x, out)
         return x, rng, vars["cache"].unfreeze()
-
+    print('sample', 'params', params.keys(), 'prime', prime, 'cache', cache) 
+    print('x', x.shape, 'start', start, 'end', end)
     return jax.lax.fori_loop(start, end, jax.jit(loop), (x, rng, cache))[0]
+
+def init_recurrence(model, params, init_x, rng):
+    variables = model.init(rng, init_x)
+    vars = {
+        "params": params,
+        "cache": variables["cache"].unfreeze() if "cache" in variables else {},
+        "prime": variables["prime"].unfreeze() if "prime" in variables else {},
+    }
+    print("[*] Priming")
+    _, prime_vars = model.apply(vars, init_x, mutable=["prime"])
+    return vars["params"], prime_vars["prime"], vars["cache"]
 
 def sample_checkpoint(path, model, length, rng):
     from flax.training import checkpoints
 
     start = np.zeros((1, length, 1), dtype=int)
-
     print("[*] Initializing from checkpoint %s" % path)
     state = checkpoints.restore_checkpoint(path, None)
     assert "params" in state

@@ -5,7 +5,7 @@ from jax.scipy.signal import convolve
 import jax.numpy as np
 import jax
 from annotated_s4.rnn_to_cnn import causal_convolution, K_conv, log_step_initializer
-from annotated_s4.s4_utils import kernel_DPLR, discrete_DPLR, hippo_initializer
+from annotated_s4.s4_utils import kernel_DPLR, discrete_DPLR, hippo_initializer, cloneLayer
 from annotated_s4.ssm_utils import random_SSM, discretize, scan_SSM, run_SSM
 from annotated_s4.hippo_matrix import make_HiPPO
 
@@ -90,3 +90,5 @@ class S4Layer(nn.Module):
             if self.is_mutable_collection("cache"):
                 self.x_k_1.value = x_k
             return y_s.reshape(-1).real + self.D * u
+
+S4Layer =  cloneLayer(S4Layer)

@@ -10,6 +10,7 @@ model:
   embedding: false
   layer:
     N: 64
+  decode: False # True: RNN, False: CNN
 
 train:
   epochs: 10
@@ -17,7 +18,7 @@ train:
   lr: 0.001
   lr_schedule: false
   weight_decay: 0.01
-  checkpoint: false
+  checkpoint: true
   suffix: null # String to use for checkpoint suffix
   sample: null # Sample during validation with desired prefix length
 

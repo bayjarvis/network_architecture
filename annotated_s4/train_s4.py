@@ -1,21 +1,5 @@
 
 # https://github.com/srush/annotated-s4/
-from annotated_s4.s4_layer import S4Layer
-from annotated_s4.hippo_matrix import make_HiPPO, cloneLayer
-
-def init_recurrence(model, params, init_x, rng):
-    variables = model.init(rng, init_x)
-    vars = {
-        "params": params,
-        "cache": variables["cache"].unfreeze(),
-        "prime": variables["prime"].unfreeze(),
-    }
-    print("[*] Priming")
-    _, prime_vars = model.apply(vars, init_x, mutable=["prime"])
-    return vars["params"], prime_vars["prime"], vars["cache"]
-
-S4Layer = cloneLayer(S4Layer)
-
 
 import os
 import shutil
@@ -34,7 +18,7 @@ from annotated_s4.s4_utils import sample_image_prefix
 from annotated_s4.ssm_layer import SSMLayer
 from annotated_s4.s4_layer import S4Layer
 from annotated_s4.stacked_model import BatchStackedModel
-
+from annotated_s4.hippo_matrix import make_HiPPO
 
 try:
     # Slightly nonstandard import name to make config easier - see example_train()
@@ -445,7 +429,7 @@ def example_train(
         ):
             # Create new "best-{step}.ckpt and remove old one
             if train.checkpoint:
-                shutil.copy(ckpt_path, f"{run_id}/best_{epoch}")
+                shutil.copy(os.path.join(ckpt_path, "checkpoint"), f"{run_id}/best_{epoch}")
                 if os.path.exists(f"{run_id}/best_{best_epoch}"):
                     os.remove(f"{run_id}/best_{best_epoch}")
 
