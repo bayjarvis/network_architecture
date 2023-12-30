@@ -202,7 +202,7 @@ def sample(model, params, prime, cache, x, start, end, rng):
 
         x = jax.vmap(update)(x, out)
         return x, rng, vars["cache"].unfreeze()
-    print('sample', 'params', params.keys(), 'prime', prime, 'cache', cache) 
+    print('sample', 'params', params.keys(), 'prime', prime.keys(), 'cache', cache.keys()) 
     print('x', x.shape, 'start', start, 'end', end)
     return jax.lax.fori_loop(start, end, jax.jit(loop), (x, rng, cache))[0]
 
@@ -210,8 +210,10 @@ def init_recurrence(model, params, init_x, rng):
     variables = model.init(rng, init_x)
     vars = {
         "params": params,
-        "cache": variables["cache"].unfreeze() if "cache" in variables else {},
-        "prime": variables["prime"].unfreeze() if "prime" in variables else {},
+        #"cache": variables["cache"].unfreeze() if "cache" in variables else {},
+        "cache": variables["cache"] if "cache" in variables else {},
+        #"prime": variables["prime"].unfreeze() if "prime" in variables else {},
+        "prime": variables["prime"] if "prime" in variables else {},
     }
     print("[*] Priming")
     _, prime_vars = model.apply(vars, init_x, mutable=["prime"])
